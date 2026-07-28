@@ -35,7 +35,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 logger = logging.getLogger("letshyre_chatbot_api")
 
 # Load environment variables
-load_dotenv()
+load_dotenv(override=True)
 
 
 # =====================================================================
@@ -107,6 +107,7 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = None
     # candidate_session_id links to the existing upload->confirm-role->start->answer->scorecard flow
     candidate_session_id: Optional[str] = None
+    stream: bool = Field(default=True, description="Set to false to receive a standard JSON response instead of SSE stream.")
 
 
 class Identity(BaseModel):
@@ -836,6 +837,28 @@ async def chat(
 
     if session is None:
         session = await create_session(identity)
+
+    if not payload.stream:
+        full_reply = ""
+        try:
+            async for chunk in stream_reply(identity, session.history, payload.message):
+                full_reply += chunk
+        except Exception:
+            logger.exception("Chat completion failed")
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "Something went wrong. Please try again."},
+            )
+
+        if full_reply.strip():
+            await append_message(session, ChatMessage(role="user", content=payload.message))
+            await append_message(session, ChatMessage(role="assistant", content=full_reply))
+
+        return JSONResponse({
+            "session_id": session.session_id,
+            "response": full_reply,
+            "role": identity.role.value,
+        })
 
     async def event_stream():
         full_reply = ""
@@ -1623,4 +1646,4 @@ if __name__ == "__main__":
     import uvicorn
 
     print("Starting consolidated LetsHyre Chatbot API server...")
-    uvicorn.run("letshyre_chatbot.letshyre_chatbot_api:app", host="0.0.0.0", port=8005, reload=True)
+    uvicorn.run("letshyre_chatbot_api:app", host="0.0.0.0", port=8005, reload=True)
