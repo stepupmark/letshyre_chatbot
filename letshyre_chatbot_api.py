@@ -58,7 +58,7 @@ class Settings:
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
 
     # --- Main LetsHyre API (for fetching real candidate/session data) ---
-    CORE_API_BASE_URL: str = os.getenv("CORE_API_BASE_URL", "http://localhost:8000")
+    CORE_API_BASE_URL: str = os.getenv("CORE_API_BASE_URL", "http://192.168.1.13:8000")
     CORE_API_INTERNAL_TOKEN: str = os.getenv("CORE_API_INTERNAL_TOKEN", "")
 
     # --- Frontend, for building redirect links ---
@@ -463,10 +463,12 @@ async def _find_candidates(tool_input: dict, identity: Identity) -> dict:
 
 
 async def _get_candidate_status(identity: Identity) -> dict:
+    cand_id = identity.candidate_session_id or identity.user_id
+    base_url = settings.CORE_API_BASE_URL.rstrip("/")
     async with httpx.AsyncClient(timeout=5.0) as client:
         try:
             resp = await client.get(
-                f"{settings.CORE_API_BASE_URL}/api/v1/candidate-sessions/{identity.candidate_session_id}/status",
+                f"{base_url}/commonapp/v1/chatbot/internal/candidate-status/{cand_id}/",
                 headers={"Authorization": f"Bearer {settings.CORE_API_INTERNAL_TOKEN}"},
             )
             resp.raise_for_status()
@@ -476,10 +478,11 @@ async def _get_candidate_status(identity: Identity) -> dict:
 
 
 async def _get_employer_profile(identity: Identity) -> dict:
+    base_url = settings.CORE_API_BASE_URL.rstrip("/")
     async with httpx.AsyncClient(timeout=5.0) as client:
         try:
             resp = await client.get(
-                f"{settings.CORE_API_BASE_URL}/api/v1/employers/{identity.company_id}/profile",
+                f"{base_url}/commonapp/v1/chatbot/internal/employer-profile/{identity.company_id}/",
                 headers={"Authorization": f"Bearer {settings.CORE_API_INTERNAL_TOKEN}"},
             )
             resp.raise_for_status()
@@ -489,10 +492,11 @@ async def _get_employer_profile(identity: Identity) -> dict:
 
 
 async def _get_employer_jobs(identity: Identity) -> dict:
+    base_url = settings.CORE_API_BASE_URL.rstrip("/")
     async with httpx.AsyncClient(timeout=5.0) as client:
         try:
             resp = await client.get(
-                f"{settings.CORE_API_BASE_URL}/api/v1/employers/{identity.company_id}/jobs",
+                f"{base_url}/commonapp/v1/chatbot/internal/employer-jobs/{identity.company_id}/",
                 headers={"Authorization": f"Bearer {settings.CORE_API_INTERNAL_TOKEN}"},
             )
             resp.raise_for_status()
