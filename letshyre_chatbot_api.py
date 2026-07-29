@@ -58,7 +58,7 @@ class Settings:
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
 
     # --- Main LetsHyre API (for fetching real candidate/session data) ---
-    CORE_API_BASE_URL: str = os.getenv("CORE_API_BASE_URL", "http://192.168.1.13:8000")
+    CORE_API_BASE_URL: str = os.getenv("CORE_API_BASE_URL", "https://api.letshyre.com")
     CORE_API_INTERNAL_TOKEN: str = os.getenv("CORE_API_INTERNAL_TOKEN", "")
 
     # --- Frontend, for building redirect links ---
